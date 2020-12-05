@@ -14,56 +14,37 @@ class CrcCodingStation {
 public:
 
     static std::string code(std::string bits, std::string polinom) {
+        std::string checksum = GetCRC(bits, polinom);
+        bits.append(checksum);
+        return bits;
+    }
+
+    static std::string GetCRC(std::string bits, std::string polinom) {
         std::string tmp{ bits };
-        tmp.append(std::string(polinom.size()-1, '0'));
+        tmp.append(std::string(polinom.size() - 1, '0'));
 
         auto pos = tmp.find("1");
         while (pos <= tmp.size() - polinom.size()) {
             for (auto i = 0; i < polinom.size(); i++) {
-                tmp[pos] = '0'+(tmp[pos]-'0') ^ (polinom[i] - '0');
+                tmp[pos] = '0' + (tmp[pos] - '0') ^ (polinom[i] - '0');
+                //std::cout << std::endl << tmp;
+                pos++;
             }
-            pos = tmp.find("1",pos);
+            //std::cout << std::endl << "next iteration";
+            pos = tmp.find("1");
         }
-        return tmp;
+        return tmp.substr(bits.size(), polinom.size() - 1);
     }
 
-    static std::string GetCRC(std::string bits, std::string polinom) {
-
+    static bool check(std::string bits, std::string polinom) {
+        if (GetCRC(bits, polinom).find('1') == std::string::npos) {
+            return 0;
+        }
+        return 1;
     }
 
-
-    static long error(std::string bits) {
-        int error = 0;
-        for (long pos = 1; pos < bits.size(); pos <<= 1) {
-            int count = 0;
-            for (int l = pos - 1; l < bits.size(); l += 2 * pos) {
-                auto r = ((bits.begin() + l + pos) < bits.end()) ? (bits.begin() + l + pos) : (bits.end());
-                count += std::count(bits.begin() + l, r, '1');
-            }
-            error += (count & 1) * pos;
-        }
-        return error;
-    }
-
-    static std::string decode(std::string bits) {
-        if (int err = error(bits)) {
-            std::cout << "Error in position " << err << std::endl;
-            bits[err - 1] = (bits[err - 1] == '0') ? '1' : '0';
-        }
-        else {
-            std::cout << "Message is correct! \n";
-        }
-
-        std::string result;
-        int parbit = 1, pos = 0;
-        while (pos < bits.size()) {
-            if (pos == (parbit - 1)) {
-                parbit <<= 1;
-            }
-            else result.push_back(bits[pos]);
-            pos++;
-        }
-        return result;
+    static std::string decode(std::string bits, std::string polinom) {
+        return bits.substr(0, bits.size() - polinom.size()+1);
     }
 
 private:
@@ -72,18 +53,20 @@ private:
 
 
 int main() {
+    // 1000011 
     std::string polinom = "1000011";
-    std::string data, datacoded, pol;
+    std::string polinom2 = "11";
+    std::string data, datacoded;
     std::cin >> data;
     datacoded = CrcCodingStation::code(data, polinom);
-    std::cout << datacoded << std::endl;
-    std::cin >> pol;
+    std::cout << std::endl << "Coded data :" << datacoded << std::endl;
+    std::cin >> data;
     
-    if (CrcCodingStation.check(datacoded)) {
+    if ( CrcCodingStation::check(data, polinom)) {
         std::cout << "Error(s) detected!";
     } else {
         std::cout << "No error(s) detected!";
-        std::cout << CrcCodingStation::decode(datacoded, pol);
+        std::cout << std::endl << "Data : " << CrcCodingStation::decode(data, polinom);
     }
-    CrcCodingStation.GetCRC(datacoded);
-}
+    std::cout << std::endl << "Reminder : " << CrcCodingStation::GetCRC(data, polinom);
+   }
